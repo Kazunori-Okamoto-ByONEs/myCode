@@ -1,0 +1,55 @@
+const X_OPERATION = ''; //spreadsheetのID 
+const WEEKLY_REPORT1 = ''; //シート名
+
+function doPost(e) {
+  var output = ContentService.createTextOutput(JSON.stringify({ message: 'Success' }))
+    .setMimeType(ContentService.MimeType.JSON);
+
+  // オプションリクエストに対応
+  if (e && e.parameter && e.parameter.method == 'OPTIONS') {
+    var headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    };
+    for (var key in headers) {
+      output.setHeader(key, headers[key]);
+    }
+    return output;
+  }
+
+  try {
+    // 通常のリクエストに対応
+    var spreadsheetId = X_OPERATION;
+    var sheetName = WEEKLY_REPORT1
+    var sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+    var data = JSON.parse(e.postData.contents);
+
+    // ログを追加してデータの内容を確認
+    Logger.log('Received data: ' + JSON.stringify(data));
+
+    // データがオブジェクトであることを確認
+    if (typeof data === 'object' && data !== null) {
+      // 最終行の次の行にデータを追加
+      var lastRow = sheet.getLastRow() + 1;
+      Logger.log('Appending data to row ' + lastRow);
+      Logger.log(data);
+
+      sheet.getRange('C10').setValue(data.follower);
+    } else {
+      // データがオブジェクトでない場合のエラーハンドリング
+      Logger.log('Invalid data format: data is not an object');
+      return ContentService.createTextOutput(JSON.stringify({ message: 'Invalid data format' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (error) {
+    // エラーハンドリングとログ
+    Logger.log('Error: ' + error.message);
+    return ContentService.createTextOutput(JSON.stringify({ message: 'Error', details: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+
+  return output;
+}
+
